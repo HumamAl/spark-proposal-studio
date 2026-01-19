@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, Search, Eye, CheckCircle2, XCircle, Clock, FileCheck } from "lucide-react";
+import { ClipboardList, Search, Eye, CheckCircle2, XCircle, Clock, FileCheck, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ export function ApplicationsView() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [localApplications, setLocalApplications] = useState(applications);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const filteredApplications = localApplications.filter((app) => {
     const matchesSearch =
@@ -52,14 +53,24 @@ export function ApplicationsView() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleUpdateStatus = (appId: string, newStatus: Application["status"]) => {
+  const handleUpdateStatus = async (appId: string, newStatus: Application["status"]) => {
+    setIsUpdating(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1200));
     setLocalApplications(prev =>
       prev.map(app =>
         app.id === appId ? { ...app, status: newStatus } : app
       )
     );
+    setIsUpdating(false);
     setSelectedApp(null);
-    toast.success(`Application ${newStatus.toLowerCase()}!`);
+    toast.success(`Application ${newStatus.toLowerCase()}!`, {
+      description: newStatus === "Approved"
+        ? "The applicant will be notified via email"
+        : newStatus === "Denied"
+        ? "A rejection email will be sent"
+        : "Status has been updated",
+    });
   };
 
   const getCreditScoreColor = (score: number) => {
@@ -290,15 +301,25 @@ export function ApplicationsView() {
                     <Button
                       variant="destructive"
                       onClick={() => handleUpdateStatus(selectedApp.id, "Denied")}
+                      disabled={isUpdating}
                     >
-                      <XCircle className="mr-2 h-4 w-4" />
+                      {isUpdating ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <XCircle className="mr-2 h-4 w-4" />
+                      )}
                       Deny
                     </Button>
                     <Button
                       variant="default"
                       onClick={() => handleUpdateStatus(selectedApp.id, "Approved")}
+                      disabled={isUpdating}
                     >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      {isUpdating ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                      )}
                       Approve
                     </Button>
                   </>
@@ -307,8 +328,16 @@ export function ApplicationsView() {
                   <Button
                     variant="outline"
                     onClick={() => handleUpdateStatus(selectedApp.id, "In Progress")}
+                    disabled={isUpdating}
                   >
-                    Start Review
+                    {isUpdating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Start Review"
+                    )}
                   </Button>
                 )}
               </DialogFooter>

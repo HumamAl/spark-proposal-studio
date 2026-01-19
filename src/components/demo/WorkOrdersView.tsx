@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Wrench, Search, Plus, Filter, Clock, CheckCircle2, AlertCircle, PauseCircle } from "lucide-react";
+import { Wrench, Search, Plus, Filter, Clock, CheckCircle2, AlertCircle, PauseCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,8 @@ export function WorkOrdersView() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [localWorkOrders, setLocalWorkOrders] = useState(workOrders);
   const [newWOOpen, setNewWOOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const filteredWorkOrders = localWorkOrders.filter((wo) => {
     const matchesSearch =
@@ -64,19 +66,47 @@ export function WorkOrdersView() {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  const handleStatusChange = (workOrderId: string, newStatus: WorkOrder["status"]) => {
+  const handleStatusChange = async (workOrderId: string, newStatus: WorkOrder["status"]) => {
+    setUpdatingId(workOrderId);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 800));
     setLocalWorkOrders(prev =>
       prev.map(wo =>
         wo.id === workOrderId ? { ...wo, status: newStatus } : wo
       )
     );
-    toast.success(`Work order status updated to ${newStatus}`);
+    setUpdatingId(null);
+    toast.success(`Work order status updated to ${newStatus}`, {
+      description: "Changes have been saved",
+    });
   };
 
-  const handleCreateWorkOrder = (e: React.FormEvent) => {
+  const handleCreateWorkOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Add a new mock work order
+    const newWorkOrder: WorkOrder = {
+      id: `WO${String(localWorkOrders.length + 1).padStart(3, '0')}`,
+      propertyId: "P001",
+      unit: "A-105",
+      title: "New maintenance request",
+      description: "Submitted via demo form",
+      priority: "Medium",
+      status: "Pending",
+      createdAt: new Date().toISOString().split('T')[0],
+      assignedTo: "Maintenance Team",
+      category: "General",
+    };
+
+    setLocalWorkOrders(prev => [newWorkOrder, ...prev]);
+    setIsSubmitting(false);
     setNewWOOpen(false);
-    toast.success("Work order created successfully!");
+    toast.success("Work order created successfully!", {
+      description: `Work Order #${newWorkOrder.id} has been submitted`,
+    });
   };
 
   const statCounts = {
@@ -171,10 +201,19 @@ export function WorkOrdersView() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setNewWOOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setNewWOOpen(false)} disabled={isSubmitting}>
                   Cancel
                 </Button>
-                <Button type="submit">Create Work Order</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Work Order"
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -296,9 +335,17 @@ export function WorkOrdersView() {
                     <Select
                       value={wo.status}
                       onValueChange={(value) => handleStatusChange(wo.id, value as WorkOrder["status"])}
+                      disabled={updatingId === wo.id}
                     >
                       <SelectTrigger className="w-[140px]">
-                        <SelectValue />
+                        {updatingId === wo.id ? (
+                          <span className="flex items-center">
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            Updating...
+                          </span>
+                        ) : (
+                          <SelectValue />
+                        )}
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Pending">Pending</SelectItem>
@@ -307,7 +354,7 @@ export function WorkOrdersView() {
                         <SelectItem value="On Hold">On Hold</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" size="sm">View Details</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast.info("Opening work order details...", { description: "This would show the full work order in the complete app" })}>View Details</Button>
                   </div>
                 </div>
               </CardContent>
