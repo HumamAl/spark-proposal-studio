@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Building2,
   Users,
@@ -7,12 +8,18 @@ import {
   Calendar,
   TrendingUp,
   Home,
+  RefreshCw,
+  Loader2,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { getDashboardStats, workOrders, scheduleItems, properties } from "@/data/mockData";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const priorityColors = {
   Low: "bg-muted text-muted-foreground",
@@ -37,12 +44,70 @@ const scheduleTypeColors = {
 };
 
 export function DashboardView() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
   const stats = getDashboardStats();
   const pendingWorkOrders = workOrders.filter(wo => wo.status !== "Complete").slice(0, 5);
   const todaySchedule = scheduleItems.filter(s => s.date === "2025-01-19");
+  const occupancyRate = ((stats.totalUnits - stats.vacantUnits) / stats.totalUnits) * 100;
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    setLastUpdated(new Date());
+    setIsRefreshing(false);
+    toast.success("Dashboard refreshed", {
+      description: "All data is up to date",
+    });
+  };
+
+  const handleQuickAction = (action: string) => {
+    toast.info(`Opening ${action}...`, {
+      description: "This would open a form in the full application",
+      duration: 3000,
+    });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header with Refresh */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Dashboard</h2>
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <Clock className="h-3 w-3" />
+            Last updated: {lastUpdated.toLocaleTimeString()}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          {isRefreshing ? "Refreshing..." : "Refresh"}
+        </Button>
+      </div>
+
+      {/* Occupancy Progress */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Portfolio Occupancy</span>
+            <span className="text-sm font-bold text-primary">{occupancyRate.toFixed(1)}%</span>
+          </div>
+          <Progress value={occupancyRate} className="h-2" />
+          <p className="text-xs text-muted-foreground mt-2">
+            {stats.totalUnits - stats.vacantUnits} of {stats.totalUnits} units occupied
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -226,22 +291,70 @@ export function DashboardView() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button>
+            <Button onClick={() => handleQuickAction("New Work Order")}>
               <Wrench className="mr-2 h-4 w-4" />
               New Work Order
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => handleQuickAction("Schedule Showing")}>
               <Calendar className="mr-2 h-4 w-4" />
               Schedule Showing
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => handleQuickAction("Add Tenant")}>
               <Users className="mr-2 h-4 w-4" />
               Add Tenant
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => handleQuickAction("Add Property")}>
               <Building2 className="mr-2 h-4 w-4" />
               Add Property
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>Latest updates across your portfolio</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Payment received</p>
+                <p className="text-xs text-muted-foreground">
+                  Keoni Nakamura paid $2,800 for Unit A-101
+                </p>
+                <p className="text-xs text-muted-foreground">2 hours ago</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
+                <Wrench className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Work order updated</p>
+                <p className="text-xs text-muted-foreground">
+                  AC repair at Aloha Gardens marked as In Progress
+                </p>
+                <p className="text-xs text-muted-foreground">4 hours ago</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20">
+                <Users className="h-4 w-4 text-warning" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">New application</p>
+                <p className="text-xs text-muted-foreground">
+                  James Kawai applied for Unit A-105 at Kailua Shores
+                </p>
+                <p className="text-xs text-muted-foreground">Yesterday</p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

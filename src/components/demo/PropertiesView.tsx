@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, MapPin, Users, Home, Search, Plus, Filter } from "lucide-react";
+import { Building2, MapPin, Users, Home, Search, Plus, Filter, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,30 @@ import {
 } from "@/components/ui/dialog";
 import { properties, getPropertyTenants, getPropertyWorkOrders, Property } from "@/data/mockData";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function PropertiesView() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+
+  const handleAddProperty = () => {
+    toast.info("Opening property form...", {
+      description: "This would open a form to add a new property in the full application",
+    });
+  };
+
+  const handleViewDetails = () => {
+    toast.info("Opening full property details...", {
+      description: "This would navigate to a detailed property page",
+    });
+  };
+
+  const handleEditProperty = () => {
+    toast.info("Opening property editor...", {
+      description: "This would open an edit form for the property",
+    });
+  };
 
   const filteredProperties = properties.filter((p) => {
     const matchesSearch =
@@ -45,7 +64,7 @@ export function PropertiesView() {
             Manage your property portfolio
           </p>
         </div>
-        <Button>
+        <Button onClick={handleAddProperty}>
           <Plus className="mr-2 h-4 w-4" />
           Add Property
         </Button>
@@ -230,8 +249,8 @@ export function PropertiesView() {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button className="flex-1">View Full Details</Button>
-                  <Button variant="outline">Edit Property</Button>
+                  <Button className="flex-1" onClick={handleViewDetails}>View Full Details</Button>
+                  <Button variant="outline" onClick={handleEditProperty}>Edit Property</Button>
                 </div>
               </div>
             </>
